@@ -849,7 +849,7 @@ a {
       rgba(7, 9, 13, 0.25) 50%,
       rgba(7, 9, 13, 0.2) 100%
     ),
-    url("./assets/7ceeafca-4c60-4f09-b474-6d7c3494e03b.png");
+    url("./assets/mapbackground.png");
   background-size: cover;
   background-position: center;
   filter: grayscale(0.8) brightness(0.75);
