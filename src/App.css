@@ -849,20 +849,12 @@ a {
       rgba(7, 9, 13, 0.25) 50%,
       rgba(7, 9, 13, 0.2) 100%
     ),
-    url("/images/city-map.jpg");
+    url("./assets/7ceeafca-4c60-4f09-b474-6d7c3494e03b.png");
   background-size: cover;
   background-position: center;
   filter: grayscale(0.8) brightness(0.75);
 }
 
-.map-marker {
-  position: absolute;
-  top: 28%;
-  left: 50%;
-  color: var(--violet);
-  transform: translate(-50%, -50%);
-  filter: drop-shadow(0 0 12px rgba(113, 98, 255, 0.45));
-}
 
 .map-information {
   padding: 10px 15px 8px;

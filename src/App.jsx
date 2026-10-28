@@ -554,10 +554,6 @@ const Weatherapp = () => {
           <article className="map-panel">
             <div className="map-background" />
 
-            <div className="map-marker">
-              <MapPin size={34} fill="currentColor" />
-            </div>
-
             <div className="map-information">
               <strong>{current.name}</strong>
               <span>{current.sys.country}</span>
