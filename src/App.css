@@ -720,7 +720,9 @@ a {
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
   border-left: 36px solid var(--violet);
-  transform: translate(-10%, -50%) rotate(220deg);
+  transform: translate(-10%, -50%) rotate(calc(var(--wind-deg, 0deg) - 90deg));
+  transform-origin: 10% 50%;
+  transition: transform 0.6s ease;
   filter: drop-shadow(0 0 5px rgba(113, 98, 255, 0.25));
 }
 
