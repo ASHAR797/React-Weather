@@ -137,7 +137,7 @@ const Weatherapp = () => {
 
   const [Weatherdata, setWeatherdata] = useState();
   const [loading, setLoading] = useState(true);
-  const [city, setCity] = useState("karachi");
+  const [city, setCity] = useState("New york");
   const [error, seterror] = useState(null);
   const [search, setSearch] = useState("");
   const handleSearch = () => {
