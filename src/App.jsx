@@ -139,7 +139,7 @@ const Weatherapp = () => {
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState("karachi");
   const [error, seterror] = useState(null);
-  const [search, setSearch] = useState("London");
+  const [search, setSearch] = useState("");
   const handleSearch = () => {
     const value = search.trim();
     if (value) setCity(value);
