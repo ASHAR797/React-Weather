@@ -170,6 +170,7 @@ a {
   gap: 14px;
   color: var(--text);
   border: 1px solid var(--border);
+  overflow: hidden;
   background:
     linear-gradient(
       115deg,
@@ -1504,4 +1505,107 @@ a {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(5, 5, 8, 0.78);
+  backdrop-filter: blur(4px);
+  animation: modal-fade 0.2s ease;
+}
+
+.modal-card {
+  width: min(420px, 100%);
+  padding: 36px 32px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  color: #fff;
+  background: #0d0e13;          /* same as your cards */
+  border: 1px solid #23252d;    /* same as your card borders */
+  border-radius: 0;             /* your design has sharp corners */
+  animation: modal-pop 0.25s ease;
+}
+
+.modal-icon { color: #6c63ff; } /* your violet accent */
+
+.modal-title { margin: 4px 0 0; }
+
+.modal-text {
+  margin: 10px 0 4px;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 12px 20px;
+  font: inherit;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid #23252d;
+  border-radius: 0;
+  transition: 0.2s;
+}
+.modal-btn:hover { border-color: #6c63ff; }
+
+.modal-btn-primary {
+  background: #6c63ff;          /* same as "View on map" button */
+  border-color: #6c63ff;
+}
+.modal-btn-primary:hover { background: #7f77ff; }
+
+@keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-pop {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+.city-search {
+  position: relative; /* needed for the loading bar */
+}
+
+.search-btn {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.search-btn:hover { color: #6c63ff; }
+
+/* thin violet bar that slides along the bottom while loading */
+.city-search.is-loading::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 35%;
+  background: #6c63ff;
+  animation: search-loading 0.9s ease-in-out infinite;
+}
+
+@keyframes search-loading {
+  from { left: -35%; }
+  to { left: 100%; }
 }

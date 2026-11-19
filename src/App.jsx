@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef , useState } from "react";
 import {
   Search,
   MapPin,
@@ -17,6 +17,8 @@ import {
   CloudSun,
   Navigation,
   Clock3,
+  WifiOff,
+  CloudOff,
 } from "lucide-react";
 
 import "./App.css";
@@ -134,60 +136,190 @@ const Weatherapp = () => {
     const h = tzOffset / 3600;
     return `(UTC${h >= 0 ? "+" : ""}${h})`;
   };
-
-  const [Weatherdata, setWeatherdata] = useState();
+  const [Weatherdata, setWeatherdata] = useState(null);
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState("New york");
-  const [error, seterror] = useState(null);
   const [search, setSearch] = useState("");
+  const [modal, setModal] = useState(null); // null | { type: "city" | "offline" | "server" }
+  const [retryKey, setRetryKey] = useState(0);
+
+  const cacheRef = useRef(new Map()); // "oxford" -> { data, time }
+  const CACHE_MS = 5 * 60 * 1000; // reuse a city's data for 5 minutes
+
   const handleSearch = () => {
     const value = search.trim();
-    if (value) setCity(value);
+    if (!value) return;
+    if (value.toLowerCase() === city.toLowerCase()) {
+      setRetryKey((k) => k + 1); // same city: just re-run the fetch
+    } else {
+      setCity(value);
+    }
+    // text stays in the box so you can fix a typo without retyping
   };
 
   useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
+    const key = city.trim().toLowerCase();
+
     async function fetchapi() {
+      // 1) Instant result if we already loaded this city recently
+      const cached = cacheRef.current.get(key);
+      if (cached && Date.now() - cached.time < CACHE_MS) {
+        setWeatherdata(cached.data);
+        setModal(null);
+        setLoading(false);
+        return;
+      }
+
+      if (!navigator.onLine) {
+        setModal({ type: "offline" });
+        setLoading(false);
+        return;
+      }
+
       const apiKey = import.meta.env.VITE_WEATHER_KEY;
-      const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`;
-      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${apiKey}`;
+      const q = encodeURIComponent(city.trim());
+      const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${q}&units=metric&appid=${apiKey}`;
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${q}&units=metric&appid=${apiKey}`;
+
       try {
         setLoading(true);
-        seterror(null);
         const [currentRes, forecastRes] = await Promise.all([
-          fetch(currentWeatherUrl),
-          fetch(forecastUrl),
+          fetch(currentWeatherUrl, { signal }),
+          fetch(forecastUrl, { signal }),
         ]);
-        if (!currentRes.ok || !forecastRes.ok) {
-          throw new Error(`HTTP error! status: ${currentRes.status}`);
+        if (signal.aborted) return;
+
+        if (currentRes.status === 404 || forecastRes.status === 404) {
+          setModal({ type: "city" });
+          return;
         }
+        if (!currentRes.ok || !forecastRes.ok) {
+          setModal({ type: "server" });
+          return;
+        }
+
         const [currentData, forecastData] = await Promise.all([
           currentRes.json(),
           forecastRes.json(),
         ]);
+        if (signal.aborted) return;
 
-        // Combine into one state object
-        setWeatherdata({
-          current: currentData,
-          forecast: forecastData,
-        });
+        const data = { current: currentData, forecast: forecastData };
+        cacheRef.current.set(key, { data, time: Date.now() });
+        setWeatherdata(data);
+        setModal(null);
       } catch (err) {
-        console.log(err.message);
-        seterror(err.message);
+        if (err.name === "AbortError") return; // cancelled on purpose, not an error
+        setModal({ type: "offline" });
       } finally {
-        setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     }
-    fetchapi();
-  }, [city]);
 
-  if (loading)
+    fetchapi();
+    return () => controller.abort(); // cancels the old request when a new search starts
+  }, [city, retryKey]);
+
+  useEffect(() => {
+    const goOffline = () => setModal({ type: "offline" });
+    const goOnline = () => {
+      setModal((m) => (m?.type === "offline" ? null : m));
+      setRetryKey((k) => k + 1);
+    };
+    window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
+    return () => {
+      window.removeEventListener("offline", goOffline);
+      window.removeEventListener("online", goOnline);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!modal) return;
+    const onKey = (e) => e.key === "Escape" && setModal(null);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [modal]);
+
+  const modalContent = {
+    city: {
+      icon: MapPin,
+      title: "CITY NOT FOUND",
+      text: "Please enter a correct city name.",
+    },
+    offline: {
+      icon: WifiOff,
+      title: "YOU'RE OFFLINE",
+      text: "Please reconnect. Your internet is offline.",
+    },
+    server: {
+      icon: CloudOff,
+      title: "SOMETHING WENT WRONG",
+      text: "We couldn't load the weather. Please try again.",
+    },
+  };
+
+  const renderModal = () => {
+    if (!modal) return null;
+    const { icon: ModalIcon, title, text } = modalContent[modal.type];
+    return (
+      <div
+        className="modal-overlay"
+        onClick={() => Weatherdata && setModal(null)}
+      >
+        <div
+          className="modal-card"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+          aria-describedby="modal-text"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ModalIcon size={54} strokeWidth={1.6} className="modal-icon" />
+          <h2 id="modal-title" className="panel-heading modal-title">
+            {title}
+          </h2>
+          <span className="violet-underline" />
+          <p id="modal-text" className="modal-text">
+            {text}
+          </p>
+          <div className="modal-actions">
+            {modal.type !== "city" && (
+              <button
+                className="modal-btn modal-btn-primary"
+                onClick={() => {
+                  setModal(null);
+                  setRetryKey((k) => k + 1);
+                }}
+              >
+                Retry
+              </button>
+            )}
+            {Weatherdata && (
+              <button className="modal-btn" onClick={() => setModal(null)}>
+                {modal.type === "city" ? "Try again" : "Close"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // First load only: full-screen loader
+  if (loading && !Weatherdata)
     return (
       <div className="loading-container">
         <h2 className="loading-text">Loading</h2>
         <div className="loading-animation"></div>
       </div>
     );
-  if (error) return <div style={{ color: "red" }}>Error: {error}</div>;
+
+  // First load failed: nothing to show except the modal
+  if (!Weatherdata)
+    return <div className="loading-container">{renderModal()}</div>;
 
   const current = Weatherdata.current;
   const forcast = Weatherdata.forecast;
@@ -240,8 +372,15 @@ const Weatherapp = () => {
             <span className="brand-name">REACT WEATHER</span>
           </a>
 
-          <div className="city-search">
-            <Search size={26} strokeWidth={1.8} />
+                   <div className={`city-search ${loading ? "is-loading" : ""}`}>
+            <button
+              type="button"
+              className="search-btn"
+              onClick={handleSearch}
+              aria-label="Search"
+            >
+              <Search size={26} strokeWidth={1.8} />
+            </button>
             <input
               type="text"
               value={search}
@@ -622,6 +761,7 @@ const Weatherapp = () => {
 
           <span className="footer-accent" />
         </footer>
+        {renderModal()}
       </main>
     </>
   );

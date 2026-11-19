@@ -6,7 +6,7 @@ The project focuses on presenting real-time weather data in a visually engaging 
 
 ## 🎨 Design Preview
 
-![https://react-weather-p887.vercel.app/](./src/assets/weatherdashboard-img.jfif)
+![Weather Dashboard](./src/assets/weatherdashboard-img.jfif)(https://react-weather-p887.vercel.app/)
 
 ## ✨ Features
 
